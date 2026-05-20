@@ -1,3 +1,4 @@
+import { isMiniPay } from '../lib/miniPay';
 import type { Page } from '../types';
 
 interface NavbarProps {
@@ -13,11 +14,14 @@ function truncateAddress(addr: string): string {
 }
 
 export default function Navbar({ page, onNavigate, connectedAccount, isOwner, onConnectWallet }: NavbarProps) {
+  const inMiniPay = isMiniPay();
+
   return (
     <nav className="navbar">
       <div className="navbar-brand">
         <div className="brand-icon" />
         <h1>Celo Predict</h1>
+        {inMiniPay && <span className="minipay-badge">MiniPay</span>}
       </div>
 
       <div className="navbar-links">
@@ -43,9 +47,23 @@ export default function Navbar({ page, onNavigate, connectedAccount, isOwner, on
 
       <div className="navbar-actions">
         {isOwner && <span className="admin-badge">Admin</span>}
-        <button className="primary-button" style={{ padding: '8px 16px', fontSize: '0.825rem' }} onClick={onConnectWallet}>
-          {connectedAccount ? truncateAddress(connectedAccount) : 'Connect Wallet'}
-        </button>
+
+        {/* In MiniPay the wallet is implicit — show address only, no button */}
+        {inMiniPay ? (
+          connectedAccount ? (
+            <span className="wallet-address-chip">{truncateAddress(connectedAccount)}</span>
+          ) : (
+            <span className="wallet-address-chip connecting">Connecting…</span>
+          )
+        ) : (
+          <button
+            className="primary-button"
+            style={{ padding: '8px 16px', fontSize: '0.825rem' }}
+            onClick={onConnectWallet}
+          >
+            {connectedAccount ? truncateAddress(connectedAccount) : 'Connect Wallet'}
+          </button>
+        )}
       </div>
     </nav>
   );

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import FloatingChat from './components/FloatingChat';
 import Navbar from './components/Navbar';
 import { connectWallet } from './lib/contract';
+import { isMiniPay } from './lib/miniPay';
 import { getOwner } from './lib/predictionMarket';
 import MarketDetailPage from './pages/MarketDetailPage';
 import MarketsPage from './pages/MarketsPage';
@@ -23,6 +24,14 @@ export default function App() {
     if (!persistedWallet) return null;
     try { return JSON.parse(persistedWallet) as WalletInfo; } catch { return null; }
   });
+
+  // Auto-connect when running inside MiniPay — wallet is always available
+  useEffect(() => {
+    if (isMiniPay()) {
+      handleNavbarConnect();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNavbarConnect = async () => {
     try {

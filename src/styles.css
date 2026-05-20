@@ -934,8 +934,79 @@ textarea:disabled { opacity: 0.4; cursor: not-allowed; }
 
 @media (max-width: 600px) {
   .page-content { padding: 16px; }
-  .navbar       { padding: 0 16px; }
-  .navbar-links .nav-link { padding: 6px 10px; font-size: 0.8rem; }
+  .navbar       { padding: 0 12px; }
+  .navbar-links .nav-link { padding: 6px 8px; font-size: 0.78rem; }
   .team-name    { font-size: 1.1rem; }
   .market-grid  { grid-template-columns: 1fr; }
+  .navbar-brand h1 { font-size: 0.875rem; }
+  /* Larger touch targets on mobile */
+  .primary-button, .secondary-button { min-height: 44px; }
+  .outcome-btn { min-height: 52px; }
+  .nav-link    { min-height: 44px; display: flex; align-items: center; }
+}
+
+/* ══════════════════════════════════════════════════════
+   MINIPAY — specific styles
+   ══════════════════════════════════════════════════════ */
+
+/* MiniPay badge in navbar */
+.minipay-badge {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #34d399, #059669);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Wallet address chip (replaces button in MiniPay) */
+.wallet-address-chip {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-mid);
+  font-size: 0.8rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  color: var(--text-secondary);
+}
+.wallet-address-chip.connecting {
+  color: var(--text-muted);
+  animation: pulse 1.5s infinite;
+}
+
+/* MiniPay viewport — app fills the full screen without overflow */
+@media (max-width: 430px) {
+  .app-shell-v2 { min-height: 100dvh; }
+
+  .navbar {
+    height: 52px;
+    padding: 0 12px;
+  }
+
+  /* Compact navbar for small MiniPay viewport */
+  .navbar-brand h1    { display: none; }
+  .navbar-links       { gap: 2px; }
+  .navbar-links .nav-link { font-size: 0.75rem; padding: 6px 8px; }
+
+  .page-content { padding: 12px; }
+
+  /* Stack detail body vertically in MiniPay */
+  .detail-body { grid-template-columns: 1fr; gap: 12px; }
+  .team-name   { font-size: 1rem; }
+
+  /* Floating chat stays reachable above bottom browser chrome */
+  .floating-chat { bottom: 16px; right: 12px; }
+  .floating-chat-panel {
+    width: calc(100vw - 24px);
+    height: 420px;
+    border-radius: 12px;
+  }
+
+  /* Market cards full-width, slightly more compact */
+  .market-card { padding: 14px 16px; }
+
+  /* Outcome buttons bigger for thumb tapping */
+  .outcome-btn { padding: 14px 6px; font-size: 0.8rem; }
 }

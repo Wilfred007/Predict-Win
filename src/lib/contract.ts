@@ -1,4 +1,5 @@
 import { BrowserProvider, Contract, ethers, type BrowserProvider as BrowserProviderType } from 'ethers';
+import { getLegacyOverrides, isMiniPay } from './miniPay';
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_ONBOARDING_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000';
 
@@ -31,11 +32,6 @@ const CONTRACT_ABI = [
   },
 ];
 
-declare global {
-  interface Window {
-    ethereum?: unknown;
-  }
-}
 
 function getBrowserProvider(): BrowserProviderType {
   if (!window.ethereum) {
@@ -66,7 +62,8 @@ export async function registerOnboarded(): Promise<string> {
   const provider = getBrowserProvider();
   const signer = await provider.getSigner();
   const contract = await getContract(signer);
-  const tx = await contract.registerOnboarded();
+  const extra = isMiniPay() ? await getLegacyOverrides(provider) : {};
+  const tx = await contract.registerOnboarded(extra);
   await tx.wait();
   return tx.hash;
 }

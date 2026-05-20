@@ -1,4 +1,5 @@
 import { BrowserProvider, Contract, formatEther, parseEther } from 'ethers';
+import { getLegacyOverrides, isMiniPay } from './miniPay';
 import type { Market, Outcome, UserBet } from '../types';
 
 const PM_ADDRESS = import.meta.env.VITE_PREDICTION_MARKET_ADDRESS || '';
@@ -130,14 +131,9 @@ const ABI = [
   },
 ];
 
-declare global {
-  interface Window { ethereum?: unknown; }
-}
-
 function getBrowserProvider() {
-  if (!window.ethereum) throw new Error('No browser wallet detected. Install MetaMask.');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return new BrowserProvider(window.ethereum as any);
+  if (!window.ethereum) throw new Error('No browser wallet detected. Install MetaMask or open in MiniPay.');
+  return new BrowserProvider(window.ethereum as never);
 }
 
 function getReadContract(): Contract {
@@ -145,11 +141,11 @@ function getReadContract(): Contract {
   return new Contract(PM_ADDRESS, ABI, getBrowserProvider());
 }
 
-async function getWriteContract(): Promise<Contract> {
+async function getWriteContract(): Promise<{ contract: Contract; provider: BrowserProvider }> {
   if (!PM_ADDRESS) throw new Error('VITE_PREDICTION_MARKET_ADDRESS not set.');
   const provider = getBrowserProvider();
   const signer = await provider.getSigner();
-  return new Contract(PM_ADDRESS, ABI, signer);
+  return { contract: new Contract(PM_ADDRESS, ABI, signer), provider };
 }
 
 function rawToMarket(id: number, raw: Awaited<ReturnType<Contract['getMarket']>>): Market {
@@ -188,24 +184,27 @@ export async function placeBet(
   outcome: Outcome,
   amountEther: string,
 ): Promise<string> {
-  const contract = await getWriteContract();
-  const tx = await contract.placeBet(marketId, outcome, { value: parseEther(amountEther) });
+  const { contract, provider } = await getWriteContract();
+  const extra = isMiniPay() ? await getLegacyOverrides(provider) : {};
+  const tx = await contract.placeBet(marketId, outcome, { value: parseEther(amountEther), ...extra });
   const receipt = await tx.wait();
   if (!receipt) throw new Error('Transaction failed');
   return tx.hash as string;
 }
 
 export async function resolveMarket(marketId: number, outcome: Outcome): Promise<string> {
-  const contract = await getWriteContract();
-  const tx = await contract.resolveMarket(marketId, outcome);
+  const { contract, provider } = await getWriteContract();
+  const extra = isMiniPay() ? await getLegacyOverrides(provider) : {};
+  const tx = await contract.resolveMarket(marketId, outcome, extra);
   const receipt = await tx.wait();
   if (!receipt) throw new Error('Transaction failed');
   return tx.hash as string;
 }
 
 export async function claimWinnings(marketId: number): Promise<string> {
-  const contract = await getWriteContract();
-  const tx = await contract.claimWinnings(marketId);
+  const { contract, provider } = await getWriteContract();
+  const extra = isMiniPay() ? await getLegacyOverrides(provider) : {};
+  const tx = await contract.claimWinnings(marketId, extra);
   const receipt = await tx.wait();
   if (!receipt) throw new Error('Transaction failed');
   return tx.hash as string;
@@ -217,8 +216,9 @@ export async function createMarket(
   league: string,
   kickoffUnixSec: number,
 ): Promise<number> {
-  const contract = await getWriteContract();
-  const tx = await contract.createMarket(homeTeam, awayTeam, league, kickoffUnixSec);
+  const { contract, provider } = await getWriteContract();
+  const extra = isMiniPay() ? await getLegacyOverrides(provider) : {};
+  const tx = await contract.createMarket(homeTeam, awayTeam, league, kickoffUnixSec, extra);
   const receipt = await tx.wait();
   if (!receipt) throw new Error('Transaction failed');
 
@@ -277,8 +277,9 @@ export async function getAccumulatedFees(): Promise<bigint> {
 }
 
 export async function withdrawFees(): Promise<string> {
-  const contract = await getWriteContract();
-  const tx = await contract.withdrawFees();
+  const { contract, provider } = await getWriteContract();
+  const extra = isMiniPay() ? await getLegacyOverrides(provider) : {};
+  const tx = await contract.withdrawFees(extra);
   const receipt = await tx.wait();
   if (!receipt) throw new Error('Transaction failed');
   return tx.hash as string;
