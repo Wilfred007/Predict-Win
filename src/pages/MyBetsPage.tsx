@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+const REFRESH_INTERVAL = 30_000;
 import { claimWinnings, formatCELO, getMarket, getUserBets } from '../lib/predictionMarket';
 import type { Market, UserBet } from '../types';
 import { Outcome, OutcomeLabel } from '../types';
@@ -25,9 +27,10 @@ export default function MyBetsPage({ connectedAccount }: MyBetsPageProps) {
   const [error,      setError]      = useState('');
   const [claimMsg,   setClaimMsg]   = useState<Record<string, string>>({});
   const [claiming,   setClaiming]   = useState<Record<string, boolean>>({});
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const load = async (account: string) => {
-    setIsLoading(true);
+  const load = async (account: string, silent = false) => {
+    if (!silent) setIsLoading(true);
     setError('');
     try {
       const rawBets = await getUserBets(account);
@@ -36,16 +39,24 @@ export default function MyBetsPage({ connectedAccount }: MyBetsPageProps) {
       const marketMap = Object.fromEntries(markets.map((m) => [m.id, m]));
       setBets(rawBets.map((b) => ({ ...b, market: marketMap[b.marketId] })));
     } catch (err) {
-      setError((err as Error).message);
+      if (!silent) setError((err as Error).message);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (connectedAccount) load(connectedAccount);
-    else setBets([]);
+    if (connectedAccount) {
+      load(connectedAccount);
+      // Poll every 30s so "Pending" bets flip to "Won/Lost" automatically when resolved
+      timerRef.current = setInterval(() => load(connectedAccount, true), REFRESH_INTERVAL);
+    } else {
+      setBets([]);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectedAccount]);
+
 
   const handleClaim = async (marketId: number) => {
     const key = String(marketId);
